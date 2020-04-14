@@ -1,4 +1,5 @@
 import os
+from typing import List,DefaultDict,Dict
 from prettytable import PrettyTable
 from collections import defaultdict
 from HW08_Heli_Patel import file_reader
@@ -8,7 +9,7 @@ import sqlite3
 class Student:
     """"Class student for instance of student."""
 
-    def __init__(self,cwid:str,name:str,major:str) -> None:
+    def __init__(self,cwid:str,name:str,major:str):
 
         self.cwid:str = cwid
         self.name:str = name
@@ -19,19 +20,20 @@ class Student:
         self.remaining_required:set = set()
         self.remaining_electives:set = set()
         self.pass_course()
-        
     
-    def add_coursegrade(self,course:str,grade:str)-> None:
-       self.coursegrades[course] = grade
+    def add_coursegrade(self,course:str,grade:str):
+        if grade!="F":
+            self.coursegrades[course] = grade
+
         
-    def pass_course(self) -> None:
+    def pass_course(self):
         for course in self.coursegrades.keys():
             if self.coursegrades[course] != 'F':
                 self.stu_pass_courses.append(course)
         return self.stu_pass_courses
 
-    def gpa_calculate(self) -> None:
-        gradedict:dict = {'A':4, 'A-':3.75, 'B+':3.25, 'B':3,'B-':2.75,'C+':2.25,'C':2.0,'C-':0,'D+':0,'D':0,'D-':0,'F':0 }
+    def gpa_calculate(self):
+        gradedict:dict = {'A':4.0, 'A-':3.75, 'B+':3.25, 'B':3,'B-':2.75,'C+':2.25,'C':2.0,'C-':0,'D+':0,'D':0,'D-':0,'F':0 }
         l1:List = []
         for course in self.coursegrades.keys():
             l1.append(gradedict[self.coursegrades[course]])
@@ -40,23 +42,23 @@ class Student:
 
 class Instructor:
     """Class instructor for instance of instructor."""
-    def __init__(self,instructorcwid:str,instructorname:str,instructordept:str)-> None:
+    def __init__(self,instructorcwid:str,instructorname:str,instructordept:str):
 
         self.instructorcwid:str = instructorcwid
         self.instructorname:str = instructorname
         self.instructordept:str = instructordept
-        self.coursestudents:defaultdict = defaultdict(int)
+        self.coursestudents:DefaultDict = defaultdict(int)
 
-    def add_coursestudent(self,course:str)-> None:
+    def add_coursestudent(self,course:str):
         self.coursestudents[course] += 1
 
-    def instructorsummary(self)-> None:
+    def instructorsummary(self):
         """Return the value as id,name,dept,course,number of students."""
 
         for course,studentnumber in self.coursestudents.items():
             yield [self.instructorcwid,self.instructorname,self.instructordept, course, studentnumber] 
 
-    def instructorsummary1(self)->None:
+    def instructorsummary1(self):
         """Return the value as id,name,dept,course,number of students."""
 
         for course,studentnumber in self.coursestudents.items():
@@ -66,13 +68,13 @@ class Instructor:
 class Major:
     """Class Repository to store all data of majors."""
 
-    def __init__(self,dept:str)-> None:
+    def __init__(self,dept:str):
 
         self.dept:str = dept
         self.required = set()
         self.elective = set()
 
-    def add_course(self,initial:str,course:str)-> None:
+    def add_course(self,initial:str,course:str):
         if initial == 'R':
             self.required.add(course)
         elif initial == 'E':
@@ -84,7 +86,7 @@ class Major:
 class Repository:
     """ Class Repository to store all the data of all the files."""
 
-    def __init__(self,directory: str) -> None:
+    def __init__(self,directory: str):
         self.directory: str = directory
         self.studentDict:dict = dict()
         self.instructorDict:dict = dict()
@@ -96,7 +98,7 @@ class Repository:
         self.major(os.path.join(directory,'majors.txt'))
         self.gpa_calculator_fun(os.path.join(directory,'students.txt'))
     
-    def student(self,path:str) -> None:
+    def student(self,path:str):
         """Student file and to create  Student dictionary.""" 
         try:
             for cwid,name,major in file_reader(path,3,"\t",header=True):
@@ -104,7 +106,7 @@ class Repository:
         except(FileNotFoundError,ValueError) as e:
             print(e)
 
-    def instructor(self,path:str) -> None:
+    def instructor(self,path:str):
         """Instuctor file and to create Instructor dictionary."""
         try:
             for instructorcwid,instructorname,instructordept in file_reader(path,3,"\t"):
@@ -112,14 +114,14 @@ class Repository:
         except(FileNotFoundError,ValueError) as e:
             print(e)                
 
-    def grades(self,path:str) -> None:
+    def grades(self,path:str):
         """Grades file for creating grades of students."""
         
         try:
             for cwid,studentcourse,studentgrade,instructorcwid in file_reader(path,4,"\t",header=True):
                 instructorcwid1 = instructorcwid.strip()
                 if cwid in self.studentDict:
-                    s = self.studentDict[cwid]
+                    s:str = self.studentDict[cwid]
                     s.add_coursegrade(studentcourse, studentgrade)
                 else:
                     print("Unknown student")
@@ -133,7 +135,7 @@ class Repository:
         except(FileNotFoundError,ValueError) as e:
             print(e)
 
-    def gpa_calculator_fun(self,path:str)->None:
+    def gpa_calculator_fun(self,path:str):
         """To calulate the gpa """
         try:
             for cwid,name,major in file_reader(path,3,"\t",header=True):
@@ -144,7 +146,7 @@ class Repository:
 
 
 
-    def major(self,path:str) -> None:
+    def major(self,path:str):
         """Majors file for creating majors of students."""
         try:
             for name,initial,course in file_reader(path,3,"\t", header=True):
@@ -162,11 +164,11 @@ class Repository:
         except(FileNotFoundError,ValueError) as e:
             print(e)                                              
 
-    def tableStudentSummary(self)-> None:
-        lst: list =[]
+    def tableStudentSummary(self):
+        lst: List =[]
         """Pretty Table for student summary."""
         print("Student Summary")
-        pt = PrettyTable(field_names = ['CWID' , 'Name' , 'Completed Courses', 'Remaining Required', 'Remaining Electives', 'GPA'])
+        pt:PrettyTable = PrettyTable(field_names = ['CWID' , 'Name' , 'Completed Courses', 'Remaining Required', 'Remaining Electives', 'GPA'])
         
         for cwid,stu in self.studentDict.items():
             pt.add_row([cwid,stu.name, sorted(stu.coursegrades.keys()) , stu.remaining_required, stu.remaining_electives, stu.gpa])
@@ -174,11 +176,11 @@ class Repository:
         print(pt)
         return(lst)
 
-    def tableInstructorSummary(self)-> None:
-        lst2:list=[]
+    def tableInstructorSummary(self):
+        lst2:List=[]
         """"Pretty Table for Instructor summary."""
         print("Instructor Summary")
-        pt = PrettyTable(field_names = ['CWID','Name','Dept','Course','Students'])
+        pt:PrettyTable = PrettyTable(field_names = ['CWID','Name','Dept','Course','Students'])
 
         for i in self.instructorDict.values():
             for line in i.instructorsummary():
@@ -187,11 +189,11 @@ class Repository:
         print(pt)
         return(lst2)
 
-    def tablemajorsummary(self)-> None:
+    def tablemajorsummary(self):
         """"Pretty Table for major summary"""
-        lst1:list = []
+        lst1:List = []
         print("Major Summary")
-        pt = PrettyTable(field_names= ['Major','Required Courses','Electives'])                                
+        pt:PrettyTable = PrettyTable(field_names= ['Major','Required Courses','Electives'])                                
                
         for name,major in self.majorsdict.items():
             pt.add_row([major.dept,major.required,major.elective])
@@ -201,14 +203,14 @@ class Repository:
 
     def table_summary_grade_db(self,db_file:str):
         """Function for getting values from database."""
-        lst3:list = []
+        lst3:List = []
         print("Student Grade Summary")
         db_file:str = "SSW810.db"
         db : sqlite3.Connection = sqlite3.connect(db_file)
         query : str = "select s.Name, s.CWID, g.Course,g.Grade,i.Name AS 'Instructor Name' "\
                       "FROM grades g join students s on g.StudentCWID = s.CWID "\
                       "join instructors i on g.InstructorCWID = i.CWID order by s.Name"
-        pt = pt = PrettyTable(field_names= ['Name','CWID','Course','Grade','Instructor'])
+        pt:PrettyTable = PrettyTable(field_names= ['Name','CWID','Course','Grade','Instructor'])
 
         for name,cwid,course,grade,instructor in db.execute(query):
             pt.add_row([name,cwid,course,grade,instructor ])
