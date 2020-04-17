@@ -5,6 +5,8 @@ from collections import defaultdict
 from HW08_Heli_Patel import file_reader
 from statistics import mean
 import sqlite3
+from flask import Flask, render_template
+app : Flask = Flask(__name__)
 
 class Student:
     """"Class student for instance of student."""
@@ -216,14 +218,31 @@ class Repository:
             pt.add_row([name,cwid,course,grade,instructor ])
             lst3.append([name,cwid,course,grade,instructor])
         print(pt)
-        return(lst3)             
-   
+        return(lst3)
 
-if __name__=="__main__":
+@app.route('/summary')
+def flask_summary_grade():
+
+        
+    db_file:str = "SSW810.db"
+    db : sqlite3.Connection = sqlite3.connect(db_file)
+    query : str = "select s.Name, s.CWID, g.Course,g.Grade,i.Name AS 'Instructor Name' "\
+                      "FROM grades g join students s on g.StudentCWID = s.CWID "\
+                      "join instructors i on g.InstructorCWID = i.CWID order by s.Name"
+
+    data: Dict[str,str] = \
+        [{'name':name,'cwid':cwid,'course':course,'grade':grade,'instructor':instructor}
+        for name,cwid,course,grade,instructor in db.execute(query)]
+    db.close()
+    return render_template('student_grades.html',
+                            title = 'Stevens Repository',
+                            table_title = 'Student Grade Summary',
+                            rows=data)
+ 
+
+if __name__=="__main__":    
 
     directory = 'C:/Users/User/Desktop/Python/.vscode'
     repository = Repository(directory)
-    repository.tableStudentSummary()
-    repository.tableInstructorSummary()
-    repository.tablemajorsummary()
     repository.table_summary_grade_db("SSW810.db")
+    app.run(debug=True)
